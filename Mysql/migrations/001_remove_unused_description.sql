@@ -1,0 +1,1 @@
+ALTER TABLE rss_sources DROP COLUMN IF EXISTS description;

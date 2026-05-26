@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Environment variables (contains sensitive credentials)
+.env
+
+# macOS system files
+.DS_Store
+
+# Superpowers workspace files
+.superpowers/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# IDE / OS
+*.swp
+*.swo
+Thumbs.db
