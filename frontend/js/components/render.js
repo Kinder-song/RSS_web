@@ -20,6 +20,19 @@ function loadArticles() {
     if (loadArticlesCallback) loadArticlesCallback();
 }
 
+// Update density selector UI to reflect current state
+export function updateDensityUI() {
+    const densityLabel = $('.density-label');
+    const options = $$('.density-option');
+    if (densityLabel) {
+        const sizeLabels = { large: '大', medium: '中', small: '小' };
+        densityLabel.textContent = sizeLabels[state.density.size];
+    }
+    options.forEach(function (opt) {
+        opt.classList.toggle('selected', opt.dataset.size === state.density.size);
+    });
+}
+
 export function renderSources() {
     const list = $('#sourceList');
     if (!list) return;
@@ -30,10 +43,19 @@ export function renderSources() {
         '<span class="name">全部文章</span></div>';
 
     html += state.sources.map(function (source) {
-        const isActive = state.currentSource == source.id;
+        const isActive = String(state.currentSource) === String(source.id);
+        const metaParts = [];
+        if (source.article_count !== undefined) {
+            metaParts.push(source.article_count + '篇');
+        }
+        if (source.last_fetched) {
+            const relativeTime = formatDate(source.last_fetched);
+            if (relativeTime) metaParts.push(relativeTime + '前');
+        }
+        const metaHtml = metaParts.length > 0 ? '<span class="source-meta">' + metaParts.join(' · ') + '</span>' : '';
         return '<div class="source-item' + (isActive ? ' active' : '') + '" data-source-id="' + source.id + '">' +
             '<div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg></div>' +
-            '<span class="name">' + escapeHtml(source.name) + '</span>' +
+            '<div class="source-info"><span class="name">' + escapeHtml(source.name) + '</span>' + metaHtml + '</div>' +
             '<button class="delete-btn" data-delete-id="' + source.id + '" aria-label="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
             '</div>';
     }).join('');
@@ -57,6 +79,9 @@ export function renderArticles() {
     const grid = $('#articlesGrid');
     const pagination = $('#pagination');
     if (!grid || !pagination) return;
+
+    // Apply density class to grid
+    grid.className = 'articles-grid density-' + state.density.size;
 
     if (state.articles.length === 0) {
         grid.innerHTML = '<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h3>暂无文章</h3><p>添加订阅源开始阅读</p></div>';
@@ -137,14 +162,6 @@ export function renderPagination() {
         '<div class="pagination-pages">' + pagesHtml + '</div>' +
         '<button ' + nextDisabled + ' data-page="' + (currentPage + 1) + '">下一页<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>' +
         '</div>' +
-        '<div class="pagination-size">' +
-        '<label>每页:</label>' +
-        '<select id="pageSizeSelect">' +
-        '<option value="12"' + (state.pageSize === 12 ? ' selected' : '') + '>12篇</option>' +
-        '<option value="24"' + (state.pageSize === 24 ? ' selected' : '') + '>24篇</option>' +
-        '<option value="48"' + (state.pageSize === 48 ? ' selected' : '') + '>48篇</option>' +
-        '</select>' +
-        '</div>' +
         '<div class="pagination-jump">' +
         '<label>跳转:</label>' +
         '<input type="number" id="pageJumpInput" min="1" max="' + totalPages + '" value="' + currentPage + '">' +
@@ -165,15 +182,6 @@ export function renderPagination() {
             if (!isNaN(page) && page >= 1 && page <= state.totalPages) goToPage(page);
         });
     });
-
-    const pageSizeSelect = $('#pageSizeSelect');
-    if (pageSizeSelect) {
-        pageSizeSelect.addEventListener('change', function () {
-            state.pageSize = parseInt(pageSizeSelect.value);
-            state.currentPage = 1;
-            loadArticles();
-        });
-    }
 
     const pageJumpBtn = $('#pageJumpBtn');
     const pageJumpInput = $('#pageJumpInput');

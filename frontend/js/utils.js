@@ -40,3 +40,9 @@ export function formatDate(dateStr) {
 // DOM helpers
 export const $ = (sel, ctx = document) => ctx.querySelector(sel);
 export const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
+
+// Calculate page size based on density settings
+export function calculatePageSize(density) {
+    const counts = { large: 6, medium: 12, small: 20 };
+    return counts[density.size] || counts.medium;
+}

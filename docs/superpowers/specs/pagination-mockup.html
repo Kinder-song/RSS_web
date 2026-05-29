@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RSS Reader - Pagination Mockup</title>
+  <style>
+    /* ============================================
+       RSS READER PAGINATION MOCKUP
+       Demonstrating 3 card density approaches
+
+       Screen assumptions:
+       - Target viewport: 1920x1080 (1080p)
+       - Header height: ~60px
+       - Sidebar width: ~280px
+       - Grid gap: 20px
+       - Pagination area height: ~80px
+       ============================================ */
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      padding: 40px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 60px;
+      font-weight: 300;
+      font-size: 2rem;
+    }
+
+    h2 {
+      font-weight: 400;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+
+    .section {
+      margin-bottom: 80px;
+      max-width: 1600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ============================================
+       CALCULATIONS (1920x1080 viewport):
+       - Available width: 1920 - (2 * 40 padding) = 1840px
+       - Available height: 1080 - header(60) - section padding(80*2) - pagination(80) = ~860px
+       ============================================ */
+
+    /* CARD DENSITY: COMPACT
+       Math:
+       - Card width: 220px
+       - Grid columns: floor(1840 / (220 + 20 gap)) = floor(1840 / 240) = 7 cards
+       - Card height: 140px
+       - Grid rows: floor(860 / (140 + 20 gap)) = floor(860 / 160) = 5 rows
+       - Total cards per page: 7 * 5 = 35 cards
+    */
+    .compact {
+      --card-width: 220px;
+      --card-height: 140px;
+      --gap: 20px;
+      --cols: 7;
+      --rows: 5;
+    }
+
+    /* CARD DENSITY: COMFORTABLE
+       Math:
+       - Card width: 300px
+       - Grid columns: floor(1840 / (300 + 20 gap)) = floor(1840 / 320) = 5 cards
+       - Card height: 200px
+       - Grid rows: floor(860 / (200 + 20 gap)) = floor(860 / 220) = 3 rows
+       - Total cards per page: 5 * 3 = 15 cards
+    */
+    .comfortable {
+      --card-width: 300px;
+      --card-height: 200px;
+      --gap: 20px;
+      --cols: 5;
+      --rows: 3;
+    }
+
+    /* CARD DENSITY: SPACIOUS
+       Math:
+       - Card width: 400px
+       - Grid columns: floor(1840 / (400 + 24 gap)) = floor(1840 / 424) = 4 cards
+       - Card height: 280px
+       - Grid rows: floor(860 / (280 + 24 gap)) = floor(860 / 304) = 2 rows
+       - Total cards per page: 4 * 2 = 8 cards
+    */
+    .spacious {
+      --card-width: 400px;
+      --card-height: 280px;
+      --gap: 24px;
+      --cols: 4;
+      --rows: 2;
+    }
+
+    /* Grid Container */
+    .card-grid {
+      display: grid;
+      /* CSS Grid auto-fit with minmax for responsive behavior */
+      grid-template-columns: repeat(var(--cols), 1fr);
+      grid-template-rows: repeat(var(--rows), 1fr);
+      gap: var(--gap);
+      background: #16213e;
+      padding: var(--gap);
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    /* Card Styling */
+    .card {
+      background: linear-gradient(135deg, #0f3460 0%, #1a4f7a 100%);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: var(--card-height);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #e94560, #ff6b6b);
+    }
+
+    .card-title {
+      font-size: calc(var(--card-width) * 0.08);
+      font-weight: 600;
+      line-height: 1.3;
+      margin-bottom: 8px;
+    }
+
+    .card-meta {
+      font-size: calc(var(--card-width) * 0.055);
+      color: #a0a0a0;
+    }
+
+    .card-source {
+      font-size: calc(var(--card-width) * 0.05);
+      color: #e94560;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Pagination UI */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      background: #16213e;
+      border-radius: 8px;
+    }
+
+    .pagination button {
+      background: #0f3460;
+      border: none;
+      color: #eee;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .pagination button:hover:not(:disabled) {
+      background: #e94560;
+    }
+
+    .pagination button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .pagination .page-numbers {
+      display: flex;
+      gap: 8px;
+    }
+
+    .pagination .page-num {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: #0f3460;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .pagination .page-num.active {
+      background: #e94560;
+    }
+
+    .pagination .page-num:hover:not(.active) {
+      background: #1a4f7a;
+    }
+
+    .page-info {
+      color: #888;
+      font-size: 14px;
+      margin-left: 16px;
+    }
+
+    /* Stats Badge */
+    .stats {
+      display: inline-block;
+      background: #e94560;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    /* Responsive demonstration */
+    @media (max-width: 1200px) {
+      .compact { --cols: 5; --rows: 4; }
+      .comfortable { --cols: 4; --rows: 3; }
+      .spacious { --cols: 3; --rows: 2; }
+    }
+
+    @media (max-width: 768px) {
+      .compact, .comfortable, .spacious {
+        --cols: 2;
+        --rows: 3;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>RSS Reader - Pagination Mockup</h1>
+
+  <!-- ============================================
+       COMPACT DENSITY
+       35 cards per page (7 cols × 5 rows)
+       ============================================ -->
+  <div class="section compact">
+    <span class="stats">35 cards/page</span>
+    <h2>Compact Density</h2>
+    <div class="card-grid">
+      <!-- Row 1 -->
+      <div class="card">
+        <div>
+          <div class="card-title">Breaking: Tech Giants Report Q3 Earnings Beat</div>
+          <div class="card-source">TechCrunch</div>
+        </div>
+        <div class="card-meta">2 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">New AI Model Achieves Human-Level Performance</div>
+          <div class="card-source">Wired</div>
+        </div>
+        <div class="card-meta">3 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">SpaceX Launches Mission to Mars</div>
+          <div class="card-source">Ars Technica</div>
+        </div>
+        <div class="card-meta">4 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Climate Summit Reaches Historic Agreement</div>
+          <div class="card-source">Reuters</div>
+        </div>
+        <div class="card-meta">5 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Stock Markets Hit New Record Highs</div>
+          <div class="card-source">Bloomberg</div>
+        </div>
+        <div class="card-meta">6 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">New Electric Vehicle Breaks Range Record</div>
+          <div class="card-source">The Verge</div>
+        </div>
+        <div class="card-meta">7 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Cybersecurity Firm Discovers Major Vulnerability</div>
+          <div class="card-source">KrebsOnSecurity</div>
+        </div>
+        <div class="card-meta">8 hours ago</div>
+      </div>
+      <!-- Row 2 -->
+      <div class="card">
+        <div>
+          <div class="card-title">Scientists Achieve Breakthrough in Fusion Energy</div>
+          <div class="card-source">Nature</div>
+        </div>
+        <div class="card-meta">9 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Major Cloud Outage Affects Thousands</div>
+          <div class="card-source">ZDNet</div>
+        </div>
+        <div class="card-meta">10 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">New Cryptocurrency Regulations Announced</div>
+          <div class="card-source">CoinDesk</div>
+        </div>
+        <div class="card-meta">11 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Social Media Platform Launches New Features</div>
+          <div class="card-source">Engadget</div>
+        </div>
+        <div class="card-meta">12 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">New Smartphone Processor Announced</div>
+          <div class="card-source">AnandTech</div>
+        </div>
+        <div class="card-meta">13 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Remote Work Trends Continue to Rise</div>
+          <div class="card-source">Forbes</div>
+        </div>
+        <div class="card-meta">14 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Gaming Industry Sees Record Sales</div>
+          <div class="card-source">IGN</div>
+        </div>
+        <div class="card-meta">15 hours ago</div>
+      </div>
+      <!-- Row 3 -->
+      <div class="card">
+        <div>
+          <div class="card-title">New Electric Vehicle Breaks Range Record</div>
+          <div class="card-source">The Verge</div>
+        </div>
+        <div class="card-meta">16 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Cybersecurity Firm Discovers Major Vulnerability</div>
+          <div class="card-source">KrebsOnSecurity</div>
+        </div>
+        <div class="card-meta">17 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Scientists Achieve Breakthrough in Fusion Energy</div>
+          <div class="card-source">Nature</div>
+        </div>
+        <div class="card-meta">18 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Major Cloud Outage Affects Thousands</div>
+          <div class="card-source">ZDNet</div>
+        </div>
+        <div class="card-meta">19 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">New Cryptocurrency Regulations Announced</div>
+          <div class="card-source">CoinDesk</div>
+        </div>
+        <div class="card-meta">20 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Social Media Platform Launches New Features</div>
+          <div class="card-source">Engadget</div>
+        </div>
+        <div class="card-meta">21 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">New Smartphone Processor Announced</div>
+          <div class="card-source">AnandTech</div>
+        </div>
+        <div class="card-meta">22 hours ago</div>
+      </div>
+      <!-- Row 4 -->
+      <div class="card">
+        <div>
+          <div class="card-title">Remote Work Trends Continue to Rise</div>
+          <div class="card-source">Forbes</div>
+        </div>
+        <div class="card-meta">23 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Gaming Industry Sees Record Sales</div>
+          <div class="card-source">IGN</div>
+        </div>
+        <div class="card-meta">24 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Breaking: Tech Giants Report Q3 Earnings Beat</div>
+          <div class="card-source">TechCrunch</div>
+        </div>
+        <div class="card-meta">1 day ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">New AI Model Achieves Human-Level Performance</div>
+          <div class="card-source">Wired</div>
+        </div>
+        <div class="card-meta">1 day ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">SpaceX Launches Mission to Mars</div>
+          <div class="card-source">Ars Technica</div>
+        </div>
+        <div class="card-meta">1 day ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Climate Summit Reaches Historic Agreement</div>
+          <div class="card-source">Reuters</div>
+        </div>
+        <div class="card-meta">1 day ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Stock Markets Hit New Record Highs</div>
+          <div class="card-source">Bloomberg</div>
+        </div>
+        <div class="card-meta">1 day ago</div>
+      </div>
+      <!-- Row 5 -->
+      <div class="card">
+        <div>
+          <div class="card-title">New Electric Vehicle Breaks Range Record</div>
+          <div class="card-source">The Verge</div>
+        </div>
+        <div class="card-meta">1 day ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Cybersecurity Firm Discovers Major Vulnerability</div>
+          <div class="card-source">KrebsOnSecurity</div>
+        </div>
+        <div class="card-meta">1 day ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Scientists Achieve Breakthrough in Fusion Energy</div>
+          <div class="card-source">Nature</div>
+        </div>
+        <div class="card-meta">2 days ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Major Cloud Outage Affects Thousands</div>
+          <div class="card-source">ZDNet</div>
+        </div>
+        <div class="card-meta">2 days ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">New Cryptocurrency Regulations Announced</div>
+          <div class="card-source">CoinDesk</div>
+        </div>
+        <div class="card-meta">2 days ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Social Media Platform Launches New Features</div>
+          <div class="card-source">Engadget</div>
+        </div>
+        <div class="card-meta">2 days ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">New Smartphone Processor Announced</div>
+          <div class="card-source">AnandTech</div>
+        </div>
+        <div class="card-meta">2 days ago</div>
+      </div>
+    </div>
+    <div class="pagination">
+      <button disabled>Previous</button>
+      <div class="page-numbers">
+        <span class="page-num active">1</span>
+        <span class="page-num">2</span>
+        <span class="page-num">3</span>
+        <span class="page-num">4</span>
+        <span class="page-num">...</span>
+        <span class="page-num">12</span>
+      </div>
+      <button>Next</button>
+      <span class="page-info">Showing 1-35 of 420 items</span>
+    </div>
+  </div>
+
+  <!-- ============================================
+       COMFORTABLE DENSITY
+       15 cards per page (5 cols × 3 rows)
+       ============================================ -->
+  <div class="section comfortable">
+    <span class="stats">15 cards/page</span>
+    <h2>Comfortable Density</h2>
+    <div class="card-grid">
+      <!-- Row 1 -->
+      <div class="card">
+        <div>
+          <div class="card-title">Breaking: Tech Giants Report Q3 Earnings Beat Expectations</div>
+          <div class="card-source">TechCrunch</div>
+        </div>
+        <div class="card-meta">2 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">New AI Model Achieves Human-Level Performance</div>
+          <div class="card-source">Wired</div>
+        </div>
+        <div class="card-meta">3 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">SpaceX Launches Mission to Mars Successfully</div>
+          <div class="card-source">Ars Technica</div>
+        </div>
+        <div class="card-meta">4 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Climate Summit Reaches Historic Agreement</div>
+          <div class="card-source">Reuters</div>
+        </div>
+        <div class="card-meta">5 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Stock Markets Hit New Record Highs Today</div>
+          <div class="card-source">Bloomberg</div>
+        </div>
+        <div class="card-meta">6 hours ago</div>
+      </div>
+      <!-- Row 2 -->
+      <div class="card">
+        <div>
+          <div class="card-title">New Electric Vehicle Breaks Range Record</div>
+          <div class="card-source">The Verge</div>
+        </div>
+        <div class="card-meta">7 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Cybersecurity Firm Discovers Major Vulnerability</div>
+          <div class="card-source">KrebsOnSecurity</div>
+        </div>
+        <div class="card-meta">8 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Scientists Achieve Breakthrough in Fusion Energy</div>
+          <div class="card-source">Nature</div>
+        </div>
+        <div class="card-meta">9 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Major Cloud Outage Affects Thousands of Users</div>
+          <div class="card-source">ZDNet</div>
+        </div>
+        <div class="card-meta">10 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">New Cryptocurrency Regulations Announced</div>
+          <div class="card-source">CoinDesk</div>
+        </div>
+        <div class="card-meta">11 hours ago</div>
+      </div>
+      <!-- Row 3 -->
+      <div class="card">
+        <div>
+          <div class="card-title">Social Media Platform Launches New Features</div>
+          <div class="card-source">Engadget</div>
+        </div>
+        <div class="card-meta">12 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">New Smartphone Processor Announced Today</div>
+          <div class="card-source">AnandTech</div>
+        </div>
+        <div class="card-meta">13 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Remote Work Trends Continue to Rise</div>
+          <div class="card-source">Forbes</div>
+        </div>
+        <div class="card-meta">14 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Gaming Industry Sees Record Sales This Quarter</div>
+          <div class="card-source">IGN</div>
+        </div>
+        <div class="card-meta">15 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Major Software Update Released for Users</div>
+          <div class="card-source">The Register</div>
+        </div>
+        <div class="card-meta">16 hours ago</div>
+      </div>
+    </div>
+    <div class="pagination">
+      <button disabled>Previous</button>
+      <div class="page-numbers">
+        <span class="page-num active">1</span>
+        <span class="page-num">2</span>
+        <span class="page-num">3</span>
+        <span class="page-num">4</span>
+        <span class="page-num">5</span>
+        <span class="page-num">6</span>
+        <span class="page-num">7</span>
+        <span class="page-num">...</span>
+        <span class="page-num">28</span>
+      </div>
+      <button>Next</button>
+      <span class="page-info">Showing 1-15 of 420 items</span>
+    </div>
+  </div>
+
+  <!-- ============================================
+       SPACIOUS DENSITY
+       8 cards per page (4 cols × 2 rows)
+       ============================================ -->
+  <div class="section spacious">
+    <span class="stats">8 cards/page</span>
+    <h2>Spacious Density</h2>
+    <div class="card-grid">
+      <div class="card">
+        <div>
+          <div class="card-title">Breaking: Tech Giants Report Q3 Earnings Beat Expectations Across All Sectors</div>
+          <div class="card-source">TechCrunch</div>
+        </div>
+        <div class="card-meta">2 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">New AI Model Achieves Human-Level Performance in Benchmark Tests</div>
+          <div class="card-source">Wired</div>
+        </div>
+        <div class="card-meta">3 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">SpaceX Launches Mission to Mars Successfully</div>
+          <div class="card-source">Ars Technica</div>
+        </div>
+        <div class="card-meta">4 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Climate Summit Reaches Historic Agreement on Emissions</div>
+          <div class="card-source">Reuters</div>
+        </div>
+        <div class="card-meta">5 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Stock Markets Hit New Record Highs Amid Economic Recovery</div>
+          <div class="card-source">Bloomberg</div>
+        </div>
+        <div class="card-meta">6 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">New Electric Vehicle Breaks Range Record at 600 Miles</div>
+          <div class="card-source">The Verge</div>
+        </div>
+        <div class="card-meta">7 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Cybersecurity Firm Discovers Major Vulnerability in Popular Framework</div>
+          <div class="card-source">KrebsOnSecurity</div>
+        </div>
+        <div class="card-meta">8 hours ago</div>
+      </div>
+      <div class="card">
+        <div>
+          <div class="card-title">Scientists Achieve Breakthrough in Fusion Energy Research</div>
+          <div class="card-source">Nature</div>
+        </div>
+        <div class="card-meta">9 hours ago</div>
+      </div>
+    </div>
+    <div class="pagination">
+      <button disabled>Previous</button>
+      <div class="page-numbers">
+        <span class="page-num active">1</span>
+        <span class="page-num">2</span>
+        <span class="page-num">3</span>
+        <span class="page-num">4</span>
+        <span class="page-num">5</span>
+        <span class="page-num">...</span>
+        <span class="page-num">53</span>
+      </div>
+      <button>Next</button>
+      <span class="page-info">Showing 1-8 of 420 items</span>
+    </div>
+  </div>
+
+  <!-- Summary Table -->
+  <div class="section" style="max-width: 800px; margin: 0 auto;">
+    <h2>Summary Comparison</h2>
+    <table style="width: 100%; border-collapse: collapse; background: #16213e; border-radius: 8px; overflow: hidden;">
+      <thead>
+        <tr style="background: #0f3460;">
+          <th style="padding: 16px; text-align: left;">Density</th>
+          <th style="padding: 16px; text-align: center;">Card Size</th>
+          <th style="padding: 16px; text-align: center;">Columns</th>
+          <th style="padding: 16px; text-align: center;">Rows</th>
+          <th style="padding: 16px; text-align: center;">Cards/Page</th>
+          <th style="padding: 16px; text-align: center;">Pages (420 items)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid #1a4f7a;">
+          <td style="padding: 16px;">Compact</td>
+          <td style="padding: 16px; text-align: center;">220×140px</td>
+          <td style="padding: 16px; text-align: center;">7</td>
+          <td style="padding: 16px; text-align: center;">5</td>
+          <td style="padding: 16px; text-align: center; color: #e94560; font-weight: 600;">35</td>
+          <td style="padding: 16px; text-align: center;">12</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #1a4f7a;">
+          <td style="padding: 16px;">Comfortable</td>
+          <td style="padding: 16px; text-align: center;">300×200px</td>
+          <td style="padding: 16px; text-align: center;">5</td>
+          <td style="padding: 16px; text-align: center;">3</td>
+          <td style="padding: 16px; text-align: center; color: #e94560; font-weight: 600;">15</td>
+          <td style="padding: 16px; text-align: center;">28</td>
+        </tr>
+        <tr>
+          <td style="padding: 16px;">Spacious</td>
+          <td style="padding: 16px; text-align: center;">400×280px</td>
+          <td style="padding: 16px; text-align: center;">4</td>
+          <td style="padding: 16px; text-align: center;">2</td>
+          <td style="padding: 16px; text-align: center; color: #e94560; font-weight: 600;">8</td>
+          <td style="padding: 16px; text-align: center;">53</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

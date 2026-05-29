@@ -86,6 +86,18 @@ npm start
 
 访问 http://localhost:55300
 
+## 数据库迁移
+
+首次部署后需执行迁移脚本以启用新功能：
+
+```bash
+mysql -u root -p < Mysql/migrations/002_add_source_metadata.sql
+```
+
+迁移为订阅源表新增：
+- `last_fetched`: 最后抓取时间
+- `article_count`: 文章总数
+
 ## API 接口
 
 | 方法 | 路径 | 说明 |

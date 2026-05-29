@@ -78,6 +78,22 @@
                     <input type="text" id="searchInput" placeholder="搜索文章标题或内容... (按 / 聚焦)">
                 </div>
                 <div class="toolbar-actions">
+                    <div class="density-selector" id="densitySelector">
+                        <button class="density-btn" id="densityBtn" aria-label="设置密度" title="卡片大小">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                            </svg>
+                            <span class="density-label">中</span>
+                        </button>
+                        <div class="density-dropdown" id="densityDropdown">
+                            <button class="density-option" data-size="large">大卡片</button>
+                            <button class="density-option selected" data-size="medium">中卡片</button>
+                            <button class="density-option" data-size="small">小卡片</button>
+                        </div>
+                    </div>
                     <button class="icon-btn" id="refreshBtn" aria-label="刷新" title="刷新快捷键: R">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="refresh-icon">
                             <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>

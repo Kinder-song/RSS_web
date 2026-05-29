@@ -2,6 +2,29 @@ import pool from '../db.js';
 import { parseRSS, fetchArticleCover } from '../rss.js';
 import { logger } from '../middleware/logger.js';
 
+export async function updateSourceMetadata(sourceId, newArticleCount) {
+    try {
+        const [countResult] = await pool.query(
+            'SELECT COUNT(*) as total FROM articles WHERE source_id = ?',
+            [sourceId]
+        );
+        // Use separate queries to handle databases without the new columns
+        await pool.query(
+            'UPDATE rss_sources SET last_fetched = NOW() WHERE id = ?',
+            [sourceId]
+        );
+        await pool.query(
+            'UPDATE rss_sources SET article_count = ? WHERE id = ?',
+            [countResult[0].total, sourceId]
+        );
+    } catch (e) {
+        // Silently ignore if columns don't exist yet (before migration)
+        if (!e.message.includes('Unknown column')) {
+            logger.error('Failed to update source metadata', e);
+        }
+    }
+}
+
 // Simple async mutex with timeout
 function createMutex(timeoutMs = 30000) {
     let queue = Promise.resolve();
@@ -56,40 +79,43 @@ export async function fetchAndStoreArticles(sourceId, sourceUrl) {
 
         // Filter to only new articles
         const newArticles = articles.filter(a => !existingUrls.has(a.url));
-        if (newArticles.length === 0) return 0;
 
         // Batch insert (cover_path starts as NULL for articles needing covers)
-        const values = [];
-        const valuePlaceholders = [];
-        const pendingCovers = []; // { id: autoIncIdx, url: articleUrl }
-        for (const article of newArticles) {
-            valuePlaceholders.push('(?, ?, ?, ?, ?, ?)');
-            values.push(sourceId, article.title, article.url, article.published_at, article.cover_path, article.content);
-            if (!article.cover_path) {
-                pendingCovers.push({ id: values.length / 6, url: article.url });
+        if (newArticles.length > 0) {
+            const values = [];
+            const valuePlaceholders = [];
+            const pendingCovers = []; // { id: autoIncIdx, url: articleUrl }
+            for (const article of newArticles) {
+                valuePlaceholders.push('(?, ?, ?, ?, ?, ?)');
+                values.push(sourceId, article.title, article.url, article.published_at, article.cover_path, article.content);
+                if (!article.cover_path) {
+                    pendingCovers.push({ id: values.length / 6, url: article.url });
+                }
             }
-        }
 
-        // Insert articles first (to get auto-increment IDs), then fetch covers and update
-        const [insertResult] = await pool.query(
-            `INSERT INTO articles (source_id, title, url, published_at, cover_path, content) VALUES ${valuePlaceholders.join(', ')}`,
-            values
-        );
+            // Insert articles first (to get auto-increment IDs), then fetch covers and update
+            const [insertResult] = await pool.query(
+                `INSERT INTO articles (source_id, title, url, published_at, cover_path, content) VALUES ${valuePlaceholders.join(', ')}`,
+                values
+            );
 
-        // Fetch covers in parallel batches, then batch-update
-        const BATCH_SIZE = 5;
-        const insertCount = insertResult.affectedRows;
-        for (let i = 0; i < pendingCovers.length; i += BATCH_SIZE) {
-            const batch = pendingCovers.slice(i, i + BATCH_SIZE);
-            const covers = await Promise.all(batch.map(a => fetchArticleCover(a.url)));
-            for (let j = 0; j < batch.length; j++) {
-                const coverUrl = covers[j];
-                if (coverUrl) {
-                    const articleId = insertResult.insertId + batch[j].id - 1;
-                    await pool.query('UPDATE articles SET cover_path = ? WHERE id = ?', [coverUrl, articleId]);
+            // Fetch covers in parallel batches, then batch-update
+            const BATCH_SIZE = 5;
+            for (let i = 0; i < pendingCovers.length; i += BATCH_SIZE) {
+                const batch = pendingCovers.slice(i, i + BATCH_SIZE);
+                const covers = await Promise.all(batch.map(a => fetchArticleCover(a.url)));
+                for (let j = 0; j < batch.length; j++) {
+                    const coverUrl = covers[j];
+                    if (coverUrl) {
+                        const articleId = insertResult.insertId + batch[j].id - 1;
+                        await pool.query('UPDATE articles SET cover_path = ? WHERE id = ?', [coverUrl, articleId]);
+                    }
                 }
             }
         }
+
+        // Update source metadata after fetch (regardless of whether new articles were added)
+        await updateSourceMetadata(sourceId, newArticles.length);
 
         return newArticles.length;
     } catch (error) {

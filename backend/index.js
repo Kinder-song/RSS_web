@@ -41,7 +41,7 @@ app.use('/api/', (req, res, next) => {
     return requireAuth(req, res, next);
 });
 
-// Helprs
+// Helpers
 function escapeHtml(text) {
     if (!text) return '';
     return String(text)
@@ -293,7 +293,8 @@ app.get('/api/articles/:id/original', async (req, res) => {
         }
 
         // Cache original HTML for 30 minutes
-        const html = await cache(`original:${id}`, 30 * 60 * 1000, async () => {
+        const cacheKey = `original:${req.params.id}`;
+        const html = await cache(cacheKey, 30 * 60 * 1000, async () => {
             const axios = (await import('axios')).default;
             const response = await axios.get(article.url, {
                 timeout: 15000,

@@ -1,10 +1,10 @@
 import API from './api.js';
 import { state, cancelPendingRequests, currentRequestId } from './state.js';
-import { $, $$, escapeHtml, formatDate } from './utils.js';
+import { $, $$, escapeHtml, formatDate, calculatePageSize } from './utils.js';
 import { showToast } from './components/toast.js';
 import { initPreviewWindow, initDrag, initResize, openPreview, closePreview } from './components/preview.js';
 import { openAddSourceModal, closeAddSourceModal, openDeleteSourceModal, closeDeleteSourceModal, confirmDeleteSource, addSource, setLoadSourcesCallback, setLoadArticlesCallback } from './components/modal.js';
-import { renderSources, renderArticles, renderPagination, selectSource, setGoToPageCallback, setLoadArticlesCallback as setRenderLoadArticlesCallback } from './components/render.js';
+import { renderSources, renderArticles, renderPagination, selectSource, setGoToPageCallback, setLoadArticlesCallback as setRenderLoadArticlesCallback, updateDensityUI } from './components/render.js';
 
 // ─── Theme ──────────────────────────────────────────────────────────────────
 
@@ -66,17 +66,20 @@ export function loadArticles() {
     cancelPendingRequests();
     const requestId = currentRequestId;
 
+    // Calculate page size based on density settings
+    const pageSize = calculatePageSize(state.density);
+
     const grid = $('#articlesGrid');
     if (grid) {
         grid.innerHTML = '<div class="loading"><div class="loading-spinner"></div><span>加载中...</span></div>';
     }
-    API.getArticles(state.currentPage, state.currentSource, state.keyword, state.pageSize)
+    API.getArticles(state.currentPage, state.currentSource, state.keyword, pageSize)
         .then(function (data) {
             if (requestId !== currentRequestId) return;
             if (data.articles) {
                 state.articles = data.articles;
                 state.total = data.total || 0;
-                state.totalPages = Math.ceil(state.total / state.pageSize) || 1;
+                state.totalPages = Math.ceil(state.total / pageSize) || 1;
                 renderArticles();
             }
         })
@@ -257,6 +260,37 @@ function bindEvents() {
     if (addSourceBtn) addSourceBtn.title = '添加快捷键: N';
     if (refreshBtn) refreshBtn.title = '刷新快捷键: R';
     if (searchInput) searchInput.placeholder = '搜索文章标题或内容... (按 / 聚焦)';
+
+    // Density selector
+    const densityBtn = $('#densityBtn');
+    const densityDropdown = $('#densityDropdown');
+    if (densityBtn && densityDropdown) {
+        densityBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            densityDropdown.classList.toggle('active');
+        });
+        document.addEventListener('click', function () {
+            densityDropdown.classList.remove('active');
+        });
+        $$('.density-option').forEach(function (opt) {
+            opt.addEventListener('click', function () {
+                state.density.size = this.dataset.size;
+                state.currentPage = 1;
+                updateDensityUI();
+                loadArticles();
+                densityDropdown.classList.remove('active');
+            });
+        });
+    }
+
+    // Window resize handler
+    let resizeTimeout;
+    window.addEventListener('resize', function () {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function () {
+            renderArticles();
+        }, 250);
+    });
 }
 
 // ─── Init ───────────────────────────────────────────────────────────────────
@@ -264,10 +298,8 @@ function bindEvents() {
 function init() {
     // Wire up callbacks for components that need to call app functions
     setGoToPageCallback(goToPage);
-    setLoadArticlesCallback(loadArticles);
     setRenderLoadArticlesCallback(loadArticles);
     setLoadSourcesCallback(loadSources);
-    setLoadArticlesCallback(loadArticles);
 
     initTheme();
     initSidebar();

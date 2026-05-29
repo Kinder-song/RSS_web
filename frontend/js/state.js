@@ -7,7 +7,9 @@ const createState = () => ({
     totalPages: 1,
     total: 0,
     keyword: '',
-    pageSize: 12
+    density: {
+        size: 'medium'  // 'large' | 'medium' | 'small'
+    }
 });
 
 const state = createState();

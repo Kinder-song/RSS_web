@@ -49,6 +49,17 @@ export function initDrag() {
             dragOffset.y = e.clientY - rect.top;
             e.preventDefault();
         });
+
+        // Touch support for mobile
+        previewHeader.addEventListener('touchstart', function (e) {
+            if (e.target.closest('button')) return;
+            const touch = e.touches[0];
+            isDragging = true;
+            const rect = $('#previewWindow').getBoundingClientRect();
+            dragOffset.x = touch.clientX - rect.left;
+            dragOffset.y = touch.clientY - rect.top;
+            e.preventDefault();
+        }, { passive: false });
     }
 
     document.addEventListener('mousemove', function (e) {
@@ -64,7 +75,29 @@ export function initDrag() {
         }
     });
 
+    document.addEventListener('touchmove', function (e) {
+        if (!isDragging) return;
+        const touch = e.touches[0];
+        const win = $('#previewWindow');
+        if (win) {
+            win.style.left = Math.max(0, touch.clientX - dragOffset.x) + 'px';
+            win.style.top = Math.max(0, touch.clientY - dragOffset.y) + 'px';
+            win.style.maxWidth = 'none';
+            win.style.maxHeight = 'none';
+            win.style.position = 'fixed';
+            win.style.margin = '0';
+        }
+        e.preventDefault();
+    }, { passive: false });
+
     document.addEventListener('mouseup', function () {
+        if (isDragging) {
+            isDragging = false;
+            savePreviewWindow();
+        }
+    });
+
+    document.addEventListener('touchend', function () {
         if (isDragging) {
             isDragging = false;
             savePreviewWindow();
@@ -74,30 +107,71 @@ export function initDrag() {
 
 // Resize logic
 let isResizing = false;
+let resizeStartX = 0;
+let resizeStartY = 0;
+let resizeStartWidth = 0;
+let resizeStartHeight = 0;
 
 export function initResize() {
     const resizeHandle = $('#resizeHandle');
     if (resizeHandle) {
         resizeHandle.addEventListener('mousedown', function (e) {
             isResizing = true;
+            const rect = $('#previewWindow').getBoundingClientRect();
+            resizeStartX = e.clientX;
+            resizeStartY = e.clientY;
+            resizeStartWidth = rect.width;
+            resizeStartHeight = rect.height;
             e.preventDefault();
             e.stopPropagation();
         });
+
+        // Touch support for mobile
+        resizeHandle.addEventListener('touchstart', function (e) {
+            isResizing = true;
+            const touch = e.touches[0];
+            const rect = $('#previewWindow').getBoundingClientRect();
+            resizeStartX = touch.clientX;
+            resizeStartY = touch.clientY;
+            resizeStartWidth = rect.width;
+            resizeStartHeight = rect.height;
+            e.preventDefault();
+            e.stopPropagation();
+        }, { passive: false });
     }
 
     document.addEventListener('mousemove', function (e) {
         if (!isResizing) return;
         const win = $('#previewWindow');
         if (win) {
-            const rect = win.getBoundingClientRect();
-            win.style.width = Math.max(400, e.clientX - rect.left) + 'px';
-            win.style.height = Math.max(300, e.clientY - rect.top) + 'px';
+            win.style.width = Math.max(400, resizeStartWidth + (e.clientX - resizeStartX)) + 'px';
+            win.style.height = Math.max(300, resizeStartHeight + (e.clientY - resizeStartY)) + 'px';
             win.style.maxWidth = 'none';
             win.style.maxHeight = 'none';
         }
     });
 
+    document.addEventListener('touchmove', function (e) {
+        if (!isResizing) return;
+        const touch = e.touches[0];
+        const win = $('#previewWindow');
+        if (win) {
+            win.style.width = Math.max(400, resizeStartWidth + (touch.clientX - resizeStartX)) + 'px';
+            win.style.height = Math.max(300, resizeStartHeight + (touch.clientY - resizeStartY)) + 'px';
+            win.style.maxWidth = 'none';
+            win.style.maxHeight = 'none';
+        }
+        e.preventDefault();
+    }, { passive: false });
+
     document.addEventListener('mouseup', function () {
+        if (isResizing) {
+            isResizing = false;
+            savePreviewWindow();
+        }
+    });
+
+    document.addEventListener('touchend', function () {
         if (isResizing) {
             isResizing = false;
             savePreviewWindow();
@@ -143,7 +217,7 @@ export function openPreview(id) {
             if (data.summary) {
                 previewSummary.innerHTML = '<p>' + escapeHtml(data.summary) + '</p>';
             } else {
-                previewSummary.innerHTML = '<p style="color:var(--text-muted);text-align:center;">摘要生成中，请稍后再试...</p>';
+                previewSummary.innerHTML = '<p style="color:var(--text-muted);text-align:center;">摘要暂时不可用</p>';
             }
         }
 

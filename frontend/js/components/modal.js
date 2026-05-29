@@ -15,7 +15,7 @@ export function setLoadArticlesCallback(fn) { loadArticlesCallback = fn; }
 export function openDeleteSourceModal(id) {
     const modal = $('#deleteSourceModal');
     const nameSpan = $('#deleteSourceName');
-    const source = state.sources.find(function (s) { return s.id == id; });
+    const source = state.sources.find(function (s) { return s.id === id; });
     if (!modal) return;
     pendingDeleteId = id;
     if (nameSpan) nameSpan.textContent = source ? source.name : '该订阅源';
